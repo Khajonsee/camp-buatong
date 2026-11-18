@@ -616,14 +616,15 @@ function fieldLines(s){
   m.fields.forEach(function(f){ var v=s.fields[f.k]; if(v) h+='<div class="aln"><b>'+esc(f.l)+':</b> '+esc(v)+'</div>'; });
   return h+'</div>';
 }
-function heartBtn(s){ var c=hearts[s.id]||0; return '<button class="heart" onclick="addHeart('+JSON.stringify(s.id)+')">❤️ '+c+'</button>'; }
+function heartBtn(s){ var c=hearts[s.id]||0; return '<button class="heart" onclick="addHeart('+idArg(s.id)+')">❤️ '+c+'</button>'; }
 function addHeart(id){ hearts[id]=(hearts[id]||0)+1; render(); if(LIVE){ apiPost({action:'heart',id:id}); } else { persist(); } }
+function idArg(id){ return "'"+String(id).replace(/['"\\]/g,'')+"'"; }
 function canDelete(s){ return state.role==='teacher' || (state.role==='student' && s.group===state.group); }
 function delCtrl(s){
   if(!canDelete(s)) return '';
-  if(state.confirmDel===s.id)
-    return '<span class="delc">ลบผลงานนี้? <button onclick="doDelete('+JSON.stringify(s.id)+')">ยืนยัน</button><button class="no" onclick="cancelDel()">ยกเลิก</button></span>';
-  return '<button class="delbtn" title="ลบผลงาน" onclick="askDelete('+JSON.stringify(s.id)+')">🗑️</button>';
+  if(String(state.confirmDel)===String(s.id))
+    return '<span class="delc">ลบผลงานนี้? <button onclick="doDelete('+idArg(s.id)+')">ยืนยัน</button><button class="no" onclick="cancelDel()">ยกเลิก</button></span>';
+  return '<button class="delbtn" title="ลบผลงาน" onclick="askDelete('+idArg(s.id)+')">🗑️</button>';
 }
 function askDelete(id){ state.confirmDel=id; render(); }
 function cancelDel(){ state.confirmDel=null; render(); }
