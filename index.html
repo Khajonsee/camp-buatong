@@ -386,7 +386,7 @@ var seed=[
 
 /* ---------- state ---------- */
 var state={view:'home',role:null,group:null,mission:null,offline:false,pendingShots:[],reveal:false,galG:'',galM:'',scoresAgg:{},teacherName:''};
-var subs=[]; var nextId=100; var hearts={}; var scoreRows=[]; var deletedIds={};
+var subs=[]; var nextId=100; var hearts={}; var scoreRows=[];
 try{ var raw=localStorage.getItem('camp_demo'); if(raw){var o=JSON.parse(raw); subs=o.subs||[]; nextId=o.nextId||100; hearts=o.hearts||{}; state.reveal=!!o.reveal; scoreRows=o.scoreRows||[];} }catch(e){}
 try{ state.teacherName=localStorage.getItem('camp_teacher')||''; }catch(e){}
 function persist(){ try{localStorage.setItem('camp_demo',JSON.stringify({subs:subs,nextId:nextId,hearts:hearts,reveal:state.reveal,scoreRows:scoreRows}));}catch(e){} }
@@ -403,16 +403,12 @@ function apiPost(payload,cb){
   fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)})
     .then(function(r){return r.json();}).then(function(d){cb&&cb(d);}).catch(function(){cb&&cb({ok:false});});
 }
-function refresh(){ if(!LIVE)return; apiGet(function(d){ if(!d)return;
-  if(d.items){ var now=Date.now();
-    Object.keys(deletedIds).forEach(function(k){ if(now-deletedIds[k]>60000) delete deletedIds[k]; });
-    subs=d.items.filter(function(it){ return !deletedIds[it.id]; }); }
-  if(d.hearts)hearts=d.hearts; if(d.scores)state.scoresAgg=d.scores; state.reveal=!!d.reveal; render(); }); }
+function refresh(){ if(!LIVE)return; apiGet(function(d){ if(!d)return; if(d.items)subs=d.items; if(d.hearts)hearts=d.hearts; if(d.scores)state.scoresAgg=d.scores; state.reveal=!!d.reveal; render(); }); }
 
 function allPosts(){ // gallery = demo seeds + real submissions that have a photo
   var real=subs.filter(function(s){return s.photo;}).map(function(s){
     return {id:s.id,group:s.group,mission:s.mission,cap:s.cap||'',photo:s.photo,t:s.t};});
-  return (LIVE?real:real.concat(seed)).sort(function(a,b){return b.t-a.t;});
+  return real.concat(seed).sort(function(a,b){return b.t-a.t;});
 }
 function isCore(code){ return code!=='VDO'; }
 function hasVideo(group){ return subs.some(function(s){return s.group===group&&s.mission==='VDO';}); }
@@ -636,7 +632,6 @@ function askDelete(id){ state.confirmDel=id; render(); }
 function cancelDel(){ state.confirmDel=null; render(); }
 function doDelete(id){
   state.confirmDel=null;
-  deletedIds[id]=Date.now();
   subs=subs.filter(function(s){return String(s.id)!==String(id);});
   if(!LIVE){ seed=seed.filter(function(s){return String(s.id)!==String(id);}); persist(); }
   render(); toast('🗑️ ลบผลงานแล้ว');
