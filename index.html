@@ -173,6 +173,11 @@
 
   /* gallery extras */
   .feed{align-items:start}
+  .delbtn{background:none;border:none;font-size:.86rem;cursor:pointer;padding:2px 3px;opacity:.55}
+  .delbtn:hover{opacity:1}
+  .delc{font-size:.72rem;color:#c0392b;display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+  .delc button{font-size:.7rem;border:none;border-radius:6px;padding:3px 9px;background:#c0392b;color:#fff;font-weight:700;font-family:var(--font-body)}
+  .delc button.no{background:var(--surface-2);color:var(--muted)}
   .post .prow{display:flex;align-items:center;justify-content:space-between;margin-top:6px;gap:6px}
   .heart{background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:.72rem;color:var(--fg);font-family:var(--font-body);font-weight:600}
   .heart:active{transform:scale(.92)}
@@ -613,6 +618,22 @@ function fieldLines(s){
 }
 function heartBtn(s){ var c=hearts[s.id]||0; return '<button class="heart" onclick="addHeart('+JSON.stringify(s.id)+')">❤️ '+c+'</button>'; }
 function addHeart(id){ hearts[id]=(hearts[id]||0)+1; render(); if(LIVE){ apiPost({action:'heart',id:id}); } else { persist(); } }
+function canDelete(s){ return state.role==='teacher' || (state.role==='student' && s.group===state.group); }
+function delCtrl(s){
+  if(!canDelete(s)) return '';
+  if(state.confirmDel===s.id)
+    return '<span class="delc">ลบผลงานนี้? <button onclick="doDelete('+JSON.stringify(s.id)+')">ยืนยัน</button><button class="no" onclick="cancelDel()">ยกเลิก</button></span>';
+  return '<button class="delbtn" title="ลบผลงาน" onclick="askDelete('+JSON.stringify(s.id)+')">🗑️</button>';
+}
+function askDelete(id){ state.confirmDel=id; render(); }
+function cancelDel(){ state.confirmDel=null; render(); }
+function doDelete(id){
+  state.confirmDel=null;
+  subs=subs.filter(function(s){return String(s.id)!==String(id);});
+  if(!LIVE){ seed=seed.filter(function(s){return String(s.id)!==String(id);}); persist(); }
+  render(); toast('🗑️ ลบผลงานแล้ว');
+  if(LIVE){ apiPost({action:'delete',id:id},function(d){ refresh(); }); }
+}
 function galCard(it){
   var s=it.s, g=G[s.group]||{color:'#888',name:s.group}, m=M[s.mission]||{accent:'#888'};
   var showText=(state.reveal||state.role==='teacher');
@@ -625,7 +646,7 @@ function galCard(it){
     +'<div class="pcap">'+esc(s.cap||'')+'</div>';
   if(it.kind==='video'&&s.fields&&s.fields.vlink) b+='<a class="vlink" href="'+esc(s.fields.vlink)+'" target="_blank">▶ ดูคลิป</a>';
   if(showText&&(it.kind==='text'||it.kind==='photo')) b+=fieldLines(s);
-  b+='<div class="prow"><span class="ptime">'+ago(s.t)+'</span>'+heartBtn(s)+'</div></div>';
+  b+='<div class="prow"><span class="ptime">'+ago(s.t)+'</span><span style="display:flex;gap:6px;align-items:center">'+delCtrl(s)+heartBtn(s)+'</span></div></div>';
   return '<div class="post">'+media+b+'</div>';
 }
 function fchipRow(items,cur,fn){
