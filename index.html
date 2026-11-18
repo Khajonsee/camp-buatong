@@ -285,7 +285,7 @@ M[SPECIAL.code]=SPECIAL;
 
 /* ---------- schedule (2 days) ---------- */
 var SCHEDULE={
- day1:{label:'วันที่ 1 · เสาร์ 21 พ.ย. 2569',rows:[
+ day1:{label:'วันที่ 1 · เสาร์ ที่ 21 พ.ย. 2569',rows:[
   {t:'~06:00',a:'ออกเดินทางจากโรงเรียนลองวิทยา (รถหกล้อ) · เช็กชื่อ ชี้แจงกฎ'},
   {t:'~10:00',a:'ถึงอุทยานฯ · ฟังประวัติอุทยาน',m:'M0'},
   {t:'10:30–12:00',a:'กางเต็นท์ · จัดแคมป์',m:'M1'},
@@ -298,7 +298,7 @@ var SCHEDULE={
   {t:'20:00–21:00',a:'ถอดบทเรียน STEM + นำเสนอ + มอบรางวัล',m:'M5'},
   {t:'21:00',a:'สรุปปิดวัน · เข้านอน'}
  ]},
- day2:{label:'วันที่ 2 · อาทิตย์ 22 พ.ย. 2569',rows:[
+ day2:{label:'วันที่ 2 · อาทิตย์ ที่ 22 พ.ย. 2569',rows:[
   {t:'06:00–07:00',a:'ตื่นนอน ทำธุระส่วนตัว และเก็บสัมภาระ',p:'ที่พัก/หอพัก'},
   {t:'07:00–07:45',a:'รับประทานอาหารเช้า (ที่เตรียมไว้)',p:'พื้นที่รับประทานอาหาร'},
   {t:'08:00–08:30',a:'เก็บเต็นท์ และขนสัมภาระขึ้นรถ',p:'ลานรวมกิจกรรม'},
@@ -385,10 +385,11 @@ var seed=[
 ];
 
 /* ---------- state ---------- */
-var state={view:'home',role:null,group:null,mission:null,offline:false,pendingShots:[],reveal:false,galG:'',galM:''};
-var subs=[]; var nextId=100; var hearts={};
-try{ var raw=localStorage.getItem('camp_demo'); if(raw){var o=JSON.parse(raw); subs=o.subs||[]; nextId=o.nextId||100; hearts=o.hearts||{}; state.reveal=!!o.reveal;} }catch(e){}
-function persist(){ try{localStorage.setItem('camp_demo',JSON.stringify({subs:subs,nextId:nextId,hearts:hearts,reveal:state.reveal}));}catch(e){} }
+var state={view:'home',role:null,group:null,mission:null,offline:false,pendingShots:[],reveal:false,galG:'',galM:'',scoresAgg:{},teacherName:''};
+var subs=[]; var nextId=100; var hearts={}; var scoreRows=[];
+try{ var raw=localStorage.getItem('camp_demo'); if(raw){var o=JSON.parse(raw); subs=o.subs||[]; nextId=o.nextId||100; hearts=o.hearts||{}; state.reveal=!!o.reveal; scoreRows=o.scoreRows||[];} }catch(e){}
+try{ state.teacherName=localStorage.getItem('camp_teacher')||''; }catch(e){}
+function persist(){ try{localStorage.setItem('camp_demo',JSON.stringify({subs:subs,nextId:nextId,hearts:hearts,reveal:state.reveal,scoreRows:scoreRows}));}catch(e){} }
 
 /* ============================================================
    CONFIG — ใส่ URL ของ Google Apps Script Web App ตรงนี้
@@ -402,7 +403,7 @@ function apiPost(payload,cb){
   fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)})
     .then(function(r){return r.json();}).then(function(d){cb&&cb(d);}).catch(function(){cb&&cb({ok:false});});
 }
-function refresh(){ if(!LIVE)return; apiGet(function(d){ if(!d)return; if(d.items)subs=d.items; if(d.hearts)hearts=d.hearts; state.reveal=!!d.reveal; render(); }); }
+function refresh(){ if(!LIVE)return; apiGet(function(d){ if(!d)return; if(d.items)subs=d.items; if(d.hearts)hearts=d.hearts; if(d.scores)state.scoresAgg=d.scores; state.reveal=!!d.reveal; render(); }); }
 
 function allPosts(){ // gallery = demo seeds + real submissions that have a photo
   var real=subs.filter(function(s){return s.photo;}).map(function(s){
@@ -461,6 +462,7 @@ function render(){
   else if(v==='schedule') h=vSchedule();
   else if(v==='teacher') h=vTeacher();
   else if(v==='handbook') h=vHandbook();
+  else if(v==='score') h=vScore();
   el('view').innerHTML=h;
 
   // nav
@@ -469,7 +471,7 @@ function render(){
     nav.hidden=false;
     var sa=(v==='mission')?'board':v;
     nav.innerHTML=navBtn('board','📋','ภารกิจ',sa==='board')+navBtn('schedule','🗓️','กำหนดการ',sa==='schedule')+navBtn('gallery','🖼️','แกลเลอรี',sa==='gallery');
-  } else if(state.role==='teacher'&&(v==='teacher'||v==='handbook'||v==='gallery'||v==='schedule')){
+  } else if(state.role==='teacher'&&(v==='teacher'||v==='handbook'||v==='gallery'||v==='schedule'||v==='score')){
     nav.hidden=false;
     nav.innerHTML=navBtn('teacher','📊','แดชบอร์ด',v==='teacher')+navBtn('handbook','📖','คู่มือครู',v==='handbook')+navBtn('gallery','🖼️','แกลเลอรี',v==='gallery');
   } else nav.hidden=true;
@@ -711,16 +713,23 @@ function vTeacher(){
       +(ok?'<span style="flex:1;font-size:.8rem;color:var(--good)">✓ ได้เกียรติบัตร'+(lk?' · <a href="'+esc(lk)+'" target="_blank" style="color:var(--brand)">ดูคลิป</a>':'')+'</span>'
           :'<span style="flex:1;font-size:.8rem;color:var(--muted)">ยังไม่ส่งคลิป</span>')+'</div>';
   });
-  // award
-  h+='<h3 style="font-size:1.02rem;margin:20px 0 9px">ตัดสินรางวัล + มอบโดย ผอ.</h3>'
-    +'<div style="background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px">';
-  ['1','2','3'].forEach(function(r){
-    h+='<div class="selrow"><span style="min-width:54px">อันดับ '+r+'</span>'
-      +'<select id="rank'+r+'"><option value="">— เลือกกลุ่ม —</option>'
-      +GROUPS.map(function(g){return '<option value="'+g.id+'">'+g.name+'</option>';}).join('')+'</select></div>';
-  });
-  h+='<button class="award-btn" onclick="showPodium()">🏆 ประกาศผล + เชิญ ผอ. มอบรางวัล</button>'
-    +'<div id="podium"></div></div>';
+  // award (จากคะแนนครู 17 คน)
+  var rk=ranking();
+  h+='<h3 style="font-size:1.02rem;margin:20px 0 9px">🏆 ตัดสินรางวัล (จากคะแนนครู)</h3>'
+    +'<div style="background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px">'
+    +'<button class="tog" onclick="go(\'score\')" style="margin:0 0 12px">✍️ ครูให้คะแนนกลุ่ม — แตะเพื่อเปิดหน้าลงคะแนน</button>';
+  if(!rk.length){
+    h+='<div style="font-size:.84rem;color:var(--muted)">ยังไม่มีครูให้คะแนน · กดปุ่มด้านบนให้ครูแต่ละคนลงคะแนน แล้วอันดับจะขึ้นที่นี่อัตโนมัติ</div>';
+  } else {
+    h+='<div style="font-size:.78rem;color:var(--muted);margin-bottom:8px">อันดับจากคะแนนเฉลี่ยของครูที่ลงคะแนนแล้ว</div>';
+    rk.forEach(function(it,i){
+      h+='<div class="gprog"><span class="lab" style="min-width:28px">'+(i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1)+'.')+'</span>'
+        +'<span class="lab" style="flex:1;color:'+it.g.color+'">'+it.g.name+'</span>'
+        +'<span class="cnt">'+it.avg.toFixed(1)+' · '+it.n+' ครู</span></div>';
+    });
+    h+='<button class="award-btn" onclick="announce()">🎉 ประกาศผล + เชิญ ผอ. มอบรางวัล</button><div id="podium"></div>';
+  }
+  h+='</div>';
   return h;
 }
 
@@ -796,13 +805,58 @@ function flushQueue(){
   toast('📤 ส่งคิว '+n+' งานเรียบร้อย'); render();
 }
 
-function showPodium(){
-  var r1=el('rank1').value,r2=el('rank2').value,r3=el('rank3').value;
-  if(!r1&&!r2&&!r3){ toast('เลือกกลุ่มที่ได้รางวัลก่อน'); return; }
-  function pod(id,rank,h,color){ if(!id)return ''; var g=G[id];
-    return '<div class="pod" style="height:'+h+'px;background:linear-gradient(135deg,'+color+',color-mix(in srgb,'+color+' 60%,#000))"><div class="rk">'+rank+'</div><div class="nm">'+g.name+'</div></div>';}
+/* ---------- คะแนนครู ---------- */
+function scoreAgg(){
+  if(LIVE) return state.scoresAgg||{};
+  var a={}; scoreRows.forEach(function(r){ if(!a[r.group])a[r.group]={sum:0,n:0}; a[r.group].sum+=Number(r.score)||0; a[r.group].n++; });
+  var out={}; Object.keys(a).forEach(function(g){ out[g]={avg:a[g].sum/a[g].n,n:a[g].n}; });
+  return out;
+}
+function ranking(){
+  var agg=scoreAgg(), arr=[];
+  GROUPS.forEach(function(g){ var x=agg[g.id]; if(x&&x.n>0) arr.push({g:g,avg:x.avg,n:x.n}); });
+  arr.sort(function(a,b){ return b.avg-a.avg || b.n-a.n; });
+  return arr;
+}
+function scoreOpts(cur){ var h=''; for(var i=1;i<=10;i++){ h+='<option value="'+i+'"'+(String(cur)===String(i)?' selected':'')+'>'+i+'</option>'; } return h; }
+function vScore(){
+  var h='<button class="back" onclick="go(\'teacher\')">‹ แดชบอร์ด</button>'
+    +'<div class="eyebrow">สำหรับครูผู้ตัดสิน</div><h2 class="page">ให้คะแนนกลุ่ม</h2>'
+    +'<p class="lead">ให้คะแนนภาพรวมแต่ละกลุ่ม 1–10 · ระบบเฉลี่ยคะแนนจากครูทุกคนแล้วจัดอันดับอัตโนมัติ</p>'
+    +'<div style="background:var(--surface-2);border-radius:10px;padding:10px 12px;font-size:.82rem;margin-bottom:14px">💡 <b>เกณฑ์พิจารณา:</b> หลักฐาน&เหตุผล · กระบวนการ EDP · การทำงานเป็นทีม · ความคิดสร้างสรรค์ · การนำเสนอ</div>'
+    +'<label class="fl">ชื่อครูผู้ให้คะแนน <span style="color:#e23b3b">*</span></label>'
+    +'<input type="text" id="tname" value="'+esc(state.teacherName||'')+'" placeholder="เช่น ครูขจรศรี (กันลงคะแนนซ้ำ)">';
+  GROUPS.forEach(function(g){
+    h+='<div class="selrow" style="margin-top:11px"><span style="min-width:84px;color:'+g.color+';font-weight:700;font-family:var(--font-head)">'+g.name+'</span>'
+      +'<select id="sc_'+g.id+'"><option value="">— คะแนน —</option>'+scoreOpts('')+'</select></div>';
+  });
+  h+='<button class="submit" onclick="submitScore()">บันทึกคะแนนของฉัน</button>'
+    +'<p class="note">ถ้าครูคนเดิมลงชื่อซ้ำ ระบบจะใช้คะแนนล่าสุดแทนของเดิม</p>';
+  return h;
+}
+function submitScore(){
+  var name=(el('tname').value||'').trim();
+  if(!name){ toast('ใส่ชื่อครูก่อน'); return; }
+  var scores={}, any=false;
+  GROUPS.forEach(function(g){ var v=el('sc_'+g.id).value; if(v){ scores[g.id]=Number(v); any=true; } });
+  if(!any){ toast('ให้คะแนนอย่างน้อย 1 กลุ่ม'); return; }
+  state.teacherName=name; try{ localStorage.setItem('camp_teacher',name); }catch(e){}
+  if(LIVE){
+    apiPost({action:'score',teacher:name,scores:scores},function(d){
+      if(d&&d.ok){ toast('✅ บันทึกคะแนนแล้ว'); refresh(); go('teacher'); }
+      else toast('บันทึกไม่สำเร็จ ลองใหม่อีกครั้ง');
+    });
+    toast('⏳ กำลังบันทึก...'); return;
+  }
+  scoreRows=scoreRows.filter(function(r){ return r.teacher!==name; });
+  Object.keys(scores).forEach(function(gid){ scoreRows.push({teacher:name,group:gid,score:scores[gid]}); });
+  persist(); toast('✅ บันทึกคะแนนแล้ว'); go('teacher');
+}
+function announce(){
+  var rk=ranking(); if(!rk.length){ toast('ยังไม่มีคะแนน'); return; }
+  function pod(it,rank,hh,color){ if(!it)return ''; return '<div class="pod" style="height:'+hh+'px;background:linear-gradient(135deg,'+color+',color-mix(in srgb,'+color+' 60%,#000))"><div class="rk">'+rank+'</div><div class="nm">'+it.g.name+'</div></div>'; }
   el('podium').innerHTML='<div class="podium">'
-    +pod(r2,'🥈',86,'#9aa3b5')+pod(r1,'🥇',112,'#f0b429')+pod(r3,'🥉',66,'#c77b3b')+'</div>'
+    +pod(rk[1],'🥈',86,'#9aa3b5')+pod(rk[0],'🥇',112,'#f0b429')+pod(rk[2],'🥉',66,'#c77b3b')+'</div>'
     +'<p style="text-align:center;color:var(--muted);font-size:.85rem">เรียนเชิญท่านผู้อำนวยการมอบรางวัลแก่กลุ่มที่ชนะ 🎉</p>';
   toast('🏆 ประกาศผลแล้ว');
 }
