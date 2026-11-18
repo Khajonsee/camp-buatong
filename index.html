@@ -408,7 +408,7 @@ function refresh(){ if(!LIVE)return; apiGet(function(d){ if(!d)return; if(d.item
 function allPosts(){ // gallery = demo seeds + real submissions that have a photo
   var real=subs.filter(function(s){return s.photo;}).map(function(s){
     return {id:s.id,group:s.group,mission:s.mission,cap:s.cap||'',photo:s.photo,t:s.t};});
-    return (LIVE?real:real.concat(seed)).sort(function(a,b){return b.t-a.t;});
+  return (LIVE?real:real.concat(seed)).sort(function(a,b){return b.t-a.t;});
 }
 function isCore(code){ return code!=='VDO'; }
 function hasVideo(group){ return subs.some(function(s){return s.group===group&&s.mission==='VDO';}); }
