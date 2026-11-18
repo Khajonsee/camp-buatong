@@ -1,0 +1,803 @@
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Winter STEM Camp App</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kanit:wght@500;600;700&family=Sarabun:wght@400;500;600;700&display=swap">
+<style>
+  /* layout: mobile-first app shell — scrolling content area + fixed bottom nav; views swapped by JS */
+  :root{
+    --bg:#f4f6fb; --surface:#ffffff; --surface-2:#eef1f8; --card:#ffffff;
+    --fg:#171b2e; --muted:#616a86; --line:#e3e7f1; --line-2:#d3d9e8;
+    --brand:#4338ca; --brand-ink:#ffffff; --teal:#0d9488; --good:#16a34a; --warn:#d97706;
+    --font-head:'Kanit',system-ui,sans-serif; --font-body:'Sarabun',system-ui,sans-serif;
+    --shadow:0 6px 24px rgba(23,27,46,.10);
+  }
+  @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+    --bg:#0e1120; --surface:#171b2c; --surface-2:#1e2336; --card:#1a1f32;
+    --fg:#eceefa; --muted:#9aa2be; --line:#2a3049; --line-2:#333a56;
+    --brand:#8b83f0; --brand-ink:#15172a; --teal:#2dd4bf; --good:#4ade80; --warn:#fbbf24;
+    --shadow:0 6px 24px rgba(0,0,0,.4); color-scheme:dark;
+  }}
+  :root[data-theme="dark"]{
+    --bg:#0e1120; --surface:#171b2c; --surface-2:#1e2336; --card:#1a1f32;
+    --fg:#eceefa; --muted:#9aa2be; --line:#2a3049; --line-2:#333a56;
+    --brand:#8b83f0; --brand-ink:#15172a; --teal:#2dd4bf; --good:#4ade80; --warn:#fbbf24;
+    --shadow:0 6px 24px rgba(0,0,0,.4); color-scheme:dark;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--fg);font-family:var(--font-body);line-height:1.5}
+  h1,h2,h3,h4,.ui{font-family:var(--font-head);font-weight:600}
+  button{font-family:var(--font-head);cursor:pointer}
+  .wrap{max-width:540px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;
+    padding-left:max(0px,env(safe-area-inset-left,0px));padding-right:max(0px,env(safe-area-inset-right,0px))}
+
+  /* top bar */
+  .top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--brand);color:var(--brand-ink);
+    padding:12px max(16px,env(safe-area-inset-left,0px));display:flex;align-items:center;gap:10px}
+  body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--brand);z-index:21}
+  .top .logo{width:30px;height:30px;border-radius:8px;flex:none;display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(135deg,#e23b3b,#e5c100 35%,#2e9e5b 60%,#2b7fe0 80%,#5b47d6);font-size:16px}
+  .top .ttl{font-weight:700;font-size:1rem;line-height:1.15}
+  .top .sub{font-size:.68rem;opacity:.85;font-family:var(--font-body)}
+  .top .right{margin-left:auto;display:flex;gap:6px;align-items:center}
+  .ghost{background:rgba(255,255,255,.16);color:var(--brand-ink);border:none;border-radius:8px;padding:7px 10px;font-size:.78rem;font-weight:600}
+  .pill-group{background:rgba(255,255,255,.2);border-radius:999px;padding:4px 11px;font-size:.76rem;font-weight:700;display:flex;align-items:center;gap:6px;font-family:var(--font-body)}
+  .pill-group .dot{width:10px;height:10px;border-radius:50%}
+
+  /* content */
+  main{flex:1;padding:16px max(16px,env(safe-area-inset-left,0px)) 96px}
+  .eyebrow{font-family:var(--font-head);font-weight:600;color:var(--teal);font-size:.8rem;letter-spacing:.2px}
+  h2.page{font-size:1.35rem;font-weight:700;margin:2px 0 3px;text-wrap:balance}
+  .lead{color:var(--muted);font-size:.92rem;margin-bottom:16px}
+
+  /* home */
+  .hero{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:22px;box-shadow:var(--shadow);margin-bottom:14px}
+  .rainbow{height:6px;border-radius:6px;margin-bottom:16px;background:linear-gradient(90deg,#e23b3b,#e07b00,#e5c100,#2e9e5b,#2b7fe0,#5b47d6,#9b3fd1)}
+  .role-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:4px}
+  .role{border:1.5px solid var(--line);background:var(--card);border-radius:16px;padding:18px 14px;text-align:center;transition:.15s}
+  .role:hover{border-color:var(--brand);transform:translateY(-2px)}
+  .role .ic{font-size:30px;margin-bottom:8px}
+  .role .nm{font-family:var(--font-head);font-weight:700;font-size:1.05rem}
+  .role .ds{font-size:.76rem;color:var(--muted);margin-top:3px}
+
+  /* group chips */
+  .groups{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .gcard{border:2px solid var(--line);background:var(--card);border-radius:16px;padding:16px;display:flex;align-items:center;gap:12px;transition:.15s}
+  .gcard:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+  .gcard .gdot{width:34px;height:34px;border-radius:50%;flex:none;box-shadow:0 0 0 4px rgba(0,0,0,.05)}
+  .gcard .gname{font-family:var(--font-head);font-weight:700;font-size:1.05rem}
+  .gcard .gcount{font-size:.74rem;color:var(--muted)}
+
+  /* mission board */
+  .progress{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;gap:12px}
+  .ring{--p:0;width:46px;height:46px;border-radius:50%;flex:none;
+    background:conic-gradient(var(--good) calc(var(--p)*1%), var(--surface-2) 0);display:flex;align-items:center;justify-content:center}
+  .ring span{width:34px;height:34px;border-radius:50%;background:var(--surface);display:flex;align-items:center;justify-content:center;font-family:var(--font-head);font-weight:700;font-size:.82rem}
+  .mcard{display:flex;align-items:center;gap:13px;background:var(--card);border:1px solid var(--line);border-left:5px solid var(--accent);
+    border-radius:14px;padding:13px 14px;margin-bottom:11px;width:100%;text-align:left;color:inherit}
+  .mcard:hover{box-shadow:var(--shadow)}
+  .mcode{background:var(--accent);color:#fff;font-family:var(--font-head);font-weight:700;border-radius:9px;width:40px;height:40px;flex:none;display:flex;align-items:center;justify-content:center;font-size:.92rem}
+  .mttl{font-family:var(--font-head);font-weight:600;font-size:1rem}
+  .mwhen{font-size:.74rem;color:var(--muted)}
+  .mstat{margin-left:auto;font-size:.72rem;font-weight:700;padding:4px 10px;border-radius:999px;white-space:nowrap;font-family:var(--font-body)}
+  .st-todo{background:var(--surface-2);color:var(--muted)}
+  .st-done{background:color-mix(in srgb,var(--good) 18%,transparent);color:var(--good)}
+
+  /* mission detail */
+  .back{background:none;border:none;color:var(--brand);font-weight:600;font-size:.9rem;padding:0;margin-bottom:10px;display:flex;align-items:center;gap:5px}
+  .banner{border-radius:14px;padding:16px;color:#fff;margin-bottom:14px;background:linear-gradient(135deg,var(--accent),color-mix(in srgb,var(--accent) 65%,#000))}
+  .banner .bc{font-family:var(--font-head);font-weight:700;font-size:.8rem;opacity:.9}
+  .banner h3{font-size:1.25rem;margin:2px 0 6px}
+  .banner p{font-size:.86rem;opacity:.95;margin:0}
+  .coachbox{background:var(--surface-2);border:1px dashed var(--line-2);border-radius:12px;padding:11px 13px;font-size:.84rem;font-style:italic;color:var(--muted);margin-bottom:16px}
+  .coachbox b{color:var(--fg);font-style:normal;font-family:var(--font-head);font-weight:600}
+  label.fl{display:block;font-family:var(--font-head);font-weight:600;font-size:.88rem;margin:14px 0 6px}
+  label.fl .req{color:#e23b3b}
+  textarea,input[type=text],input[type=url]{width:100%;font-family:var(--font-body);font-size:.95rem;color:var(--fg);
+    background:var(--surface);border:1.5px solid var(--line-2);border-radius:11px;padding:11px 13px;resize:vertical}
+  textarea{min-height:76px}
+  textarea:focus,input:focus{outline:2px solid var(--brand);outline-offset:1px;border-color:var(--brand)}
+  .uploader{border:1.5px dashed var(--line-2);border-radius:12px;padding:14px;text-align:center;background:var(--surface);color:var(--muted);font-size:.86rem}
+  .uploader input{display:none}
+  .uploader .pick{display:inline-block;background:var(--surface-2);border-radius:9px;padding:9px 14px;font-family:var(--font-head);font-weight:600;color:var(--fg);margin-top:4px}
+  .thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .thumb{position:relative;width:72px;height:72px;border-radius:9px;overflow:hidden;border:1px solid var(--line)}
+  .thumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .thumb button{position:absolute;top:2px;right:2px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:19px;height:19px;font-size:12px;line-height:1;padding:0}
+  .resize-note{font-size:.72rem;color:var(--muted);margin-top:6px}
+  .submit{width:100%;background:var(--brand);color:var(--brand-ink);border:none;border-radius:12px;padding:14px;font-weight:700;font-size:1rem;margin-top:20px}
+  .submit:disabled{opacity:.5}
+
+  /* gallery */
+  .live{display:flex;align-items:center;gap:7px;font-size:.8rem;color:var(--muted);margin-bottom:12px}
+  .live .blip{width:9px;height:9px;border-radius:50%;background:var(--good);animation:pulse 1.6s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+  @media (prefers-reduced-motion:reduce){.blip{animation:none}}
+  .feed{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .post{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .post .ph{aspect-ratio:4/3;background:radial-gradient(circle at 30% 30%,#2b2f55,#0a0c18);display:flex;align-items:center;justify-content:center;font-size:30px;color:#fff}
+  .post .ph img{width:100%;height:100%;object-fit:cover}
+  .post .pb{padding:9px 10px}
+  .post .pmeta{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+  .post .gchip{font-size:.66rem;font-weight:700;color:#fff;border-radius:999px;padding:1px 8px}
+  .post .mtag{font-size:.66rem;color:var(--muted);font-weight:600}
+  .post .pcap{font-size:.8rem;line-height:1.35}
+  .post .ptime{font-size:.66rem;color:var(--muted);margin-top:4px}
+  .empty{grid-column:1/-1;text-align:center;color:var(--muted);padding:34px 10px;font-size:.9rem}
+
+  /* teacher */
+  .tabs{display:flex;gap:8px;margin-bottom:14px;overflow-x:auto}
+  .tab{white-space:nowrap;border:1px solid var(--line-2);background:var(--surface);color:var(--muted);border-radius:999px;padding:7px 14px;font-size:.82rem;font-weight:600}
+  .tab.on{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
+  .statrow{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+  .stat{background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:12px;text-align:center}
+  .stat .big{font-family:var(--font-head);font-weight:700;font-size:1.5rem;font-variant-numeric:tabular-nums}
+  .stat .lb{font-size:.72rem;color:var(--muted)}
+  .gprog{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:11px 13px;margin-bottom:9px;display:flex;align-items:center;gap:11px}
+  .gprog .bar{flex:1;height:9px;background:var(--surface-2);border-radius:999px;overflow:hidden}
+  .gprog .bar i{display:block;height:100%;border-radius:999px}
+  .gprog .lab{font-family:var(--font-head);font-weight:600;font-size:.86rem;min-width:62px}
+  .gprog .cnt{font-size:.76rem;color:var(--muted);font-variant-numeric:tabular-nums}
+  .podium{display:flex;gap:9px;align-items:flex-end;justify-content:center;margin:16px 0}
+  .pod{flex:1;max-width:100px;border-radius:12px 12px 0 0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:10px 6px;color:#fff;text-align:center}
+  .pod .rk{font-family:var(--font-head);font-weight:700;font-size:1.3rem}
+  .pod .nm{font-size:.76rem;font-weight:600}
+  .selrow{display:flex;gap:8px;align-items:center;margin-bottom:9px;font-size:.86rem}
+  .selrow select{flex:1;font-family:var(--font-body);padding:9px 11px;border-radius:10px;border:1.5px solid var(--line-2);background:var(--surface);color:var(--fg)}
+  .award-btn{width:100%;background:linear-gradient(135deg,#f0a93b,#e07b00);color:#fff;border:none;border-radius:12px;padding:13px;font-weight:700;margin-top:6px}
+
+  /* schedule */
+  .day{margin-bottom:18px}
+  .daylabel{display:inline-block;background:var(--teal);color:#fff;font-family:var(--font-head);font-weight:700;font-size:.82rem;padding:5px 12px;border-radius:999px;margin-bottom:8px}
+  .srow{display:flex;gap:11px;padding:10px 0;border-bottom:1px solid var(--line)}
+  .srow .st{font-family:var(--font-head);font-weight:600;color:var(--brand);font-size:.8rem;min-width:66px;flex:none;font-variant-numeric:tabular-nums}
+  .srow .sa{font-size:.9rem}
+  .srow .schip{display:inline-block;font-size:.66rem;font-weight:700;color:#fff;border-radius:999px;padding:1px 8px;margin-top:4px}
+  .srow .splace{font-size:.74rem;color:var(--muted);margin-top:3px}
+
+  /* accordion (teacher handbook) */
+  .acc{border:1px solid var(--line);border-radius:12px;margin-bottom:10px;background:var(--card);overflow:hidden}
+  .acc>.ah{width:100%;text-align:left;background:none;border:none;padding:13px 14px;display:flex;align-items:center;gap:10px;color:var(--fg);font-family:var(--font-head);font-weight:600;font-size:.98rem}
+  .acc .anum{background:var(--brand);color:var(--brand-ink);width:25px;height:25px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:.8rem;flex:none}
+  .acc .arr{margin-left:auto;color:var(--muted);transition:transform .2s;font-size:1.1rem}
+  .acc.open .arr{transform:rotate(90deg)}
+  .acc .abody{display:none;padding:0 15px 15px}
+  .acc.open .abody{display:block}
+  .abody h4{font-family:var(--font-head);font-weight:600;color:var(--brand);font-size:.9rem;margin:13px 0 5px}
+  .abody p{font-size:.88rem;margin:0 0 7px}
+  .abody ul{margin:0 0 9px;padding-left:18px}
+  .abody li{font-size:.86rem;margin-bottom:3px}
+  .abody .mini{background:var(--surface-2);border-radius:9px;padding:9px 11px;font-size:.84rem;margin:7px 0}
+  .abody .tn{border-left:3px solid var(--warn);background:color-mix(in srgb,var(--warn) 12%,transparent);padding:7px 11px;border-radius:0 8px 8px 0;font-size:.82rem;margin:7px 0}
+  .abody .sf{border:1px solid color-mix(in srgb,#e23b3b 40%,transparent);background:color-mix(in srgb,#e23b3b 9%,transparent);color:#c0392b;border-radius:8px;padding:7px 11px;font-size:.8rem;margin:7px 0}
+  .rub{margin-bottom:8px}.rub b{font-family:var(--font-head);font-size:.86rem}.rub .lv{font-size:.78rem;color:var(--muted);margin-top:2px}
+
+  /* gallery extras */
+  .feed{align-items:start}
+  .post .prow{display:flex;align-items:center;justify-content:space-between;margin-top:6px;gap:6px}
+  .heart{background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:.72rem;color:var(--fg);font-family:var(--font-body);font-weight:600}
+  .heart:active{transform:scale(.92)}
+  .vlink{display:inline-block;margin-top:5px;font-size:.78rem;color:#be185d;font-weight:700;text-decoration:none}
+  .ans{margin-top:6px;border-top:1px dashed var(--line);padding-top:5px}
+  .aln{font-size:.72rem;color:var(--muted);margin-bottom:3px;line-height:1.35}
+  .aln b{color:var(--fg);font-weight:600}
+  .filterbar{display:flex;flex-direction:column;gap:7px;margin-bottom:12px}
+  .fchips{display:flex;gap:6px;overflow-x:auto;padding-bottom:3px}
+  .fchip{white-space:nowrap;border:1px solid var(--line-2);background:var(--surface);color:var(--muted);border-radius:999px;padding:5px 11px;font-size:.76rem;font-weight:600;font-family:var(--font-body)}
+  .fchip.on{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
+  .revealbanner{background:color-mix(in srgb,var(--good) 14%,var(--surface));border:1px solid color-mix(in srgb,var(--good) 40%,transparent);color:var(--good);border-radius:11px;padding:9px 12px;font-size:.82rem;margin-bottom:12px;font-weight:600}
+  .tog{width:100%;border:1.5px solid var(--line-2);background:var(--surface);color:var(--fg);border-radius:12px;padding:12px;font-weight:600;margin:4px 0 16px;font-size:.88rem;text-align:left;line-height:1.4}
+  .tog.on{background:color-mix(in srgb,var(--good) 14%,var(--surface));border-color:var(--good);color:var(--good)}
+
+  /* bottom nav */
+  nav.bn{position:fixed;bottom:0;left:0;right:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);
+    display:flex;max-width:540px;margin:0 auto;padding-bottom:env(safe-area-inset-bottom,0px)}
+  nav.bn button{flex:1;background:none;border:none;color:var(--muted);padding:9px 4px 10px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:.68rem;font-family:var(--font-body);font-weight:600}
+  nav.bn button .ni{font-size:19px}
+  nav.bn button.on{color:var(--brand)}
+
+  /* toast + banners */
+  .toast{position:fixed;left:50%;bottom:86px;transform:translateX(-50%) translateY(20px);z-index:40;
+    background:#16321f;color:#dcf5e5;border-radius:12px;padding:11px 18px;font-size:.88rem;font-weight:600;
+    box-shadow:0 8px 28px rgba(0,0,0,.3);opacity:0;transition:.28s;pointer-events:none;max-width:90vw;text-align:center}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .offbar{background:color-mix(in srgb,var(--warn) 16%,var(--surface));border:1px solid color-mix(in srgb,var(--warn) 40%,transparent);
+    color:var(--warn);border-radius:12px;padding:10px 13px;font-size:.82rem;margin-bottom:12px;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+  .offbar b{font-family:var(--font-head)}
+  .offbar button{margin-left:auto;background:var(--warn);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:.78rem;font-weight:700}
+  .demo-tag{display:inline-block;background:var(--surface-2);color:var(--muted);font-size:.66rem;border-radius:999px;padding:1px 8px;margin-left:6px;font-weight:600;vertical-align:middle}
+  .note{font-size:.78rem;color:var(--muted);text-align:center;margin-top:22px;padding:0 10px}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="logo">🏕️</div>
+    <div>
+      <div class="ttl">Winter STEM Camp</div>
+      <div class="sub">บัวตอง–น้ำพุเจ็ดสี</div>
+    </div>
+    <div class="right" id="topRight"></div>
+  </header>
+  <main id="view"></main>
+  <nav class="bn" id="nav" hidden></nav>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------- demo data ---------- */
+var GROUPS=[
+  {id:'red',name:'พลาสมา',color:'#e23b3b',count:10},
+  {id:'orange',name:'โฟตอน',color:'#e07b00',count:10},
+  {id:'yellow',name:'ควอนตัม',color:'#e5c100',count:10},
+  {id:'green',name:'โมเลกุล',color:'#2e9e5b',count:10},
+  {id:'blue',name:'นิวตรอน',color:'#2b7fe0',count:9},
+  {id:'indigo',name:'กาแล็กซี',color:'#5b47d6',count:9}
+];
+var G={}; GROUPS.forEach(function(g){G[g.id]=g;});
+
+var MISSIONS=[
+  {code:'M0',title:'ล่าคำถาม',when:'ระหว่างฟังประวัติอุทยาน',accent:'#6d4ac9',
+   brief:'จับ “คำถามที่อยากรู้” ≥5 ข้อ แล้วเลือก 1 ข้อเป็น “คำถามประจำกลุ่ม” ที่จะหาคำตอบให้ได้ตลอดค่าย',
+   coach:'“อะไรที่เห็นแล้วเอ๊ะ?” · “คำถามนี้เราวัด/ทดสอบได้จริงไหม?”',
+   fields:[{k:'q5',t:'textarea',l:'คำถามที่อยากรู้ (≥5 ข้อ)',req:true},
+           {k:'qmain',t:'text',l:'คำถามประจำกลุ่ม (เลือก 1)',req:true}],photo:false},
+  {code:'M1',title:'ผังแคมป์อัจฉริยะ',when:'ตอนกางเต็นท์',accent:'#2e8b57',
+   brief:'เลือกจุดตั้งเต็นท์ที่ดีที่สุด กางให้มั่นคง แล้วออกแบบ “การทดสอบ” ความแข็งแรงของเต็นท์เอง',
+   coach:'“ฝนตกน้ำจะไหลไปทางไหน?” · “ทำไมเชือกสมอต้องตึงเป็นมุม?”',
+   fields:[{k:'why',t:'textarea',l:'เหตุผลที่เลือกจุด (≥3 ข้อ)',req:true},
+           {k:'test',t:'textarea',l:'วิธีทดสอบ + ผลทดสอบ',req:true}],photo:true,photoLabel:'รูปผังแคมป์/เต็นท์'},
+  {code:'M2',title:'ปริศนาน้ำพุเจ็ดสี',when:'เดินสำรวจ',accent:'#0097a7',
+   brief:'ออกแบบวิธีพิสูจน์เองว่า “สี” มาจากอะไร → ตั้งสมมติฐาน → ทดสอบ → สรุป',
+   coach:'“ตักน้ำขึ้นแก้วแล้วสียังอยู่ไหม?” · “สีขึ้นกับความลึกไหม?”',
+   fields:[{k:'hyp',t:'textarea',l:'สมมติฐาน: สีมาจากอะไร',req:true},
+           {k:'data',t:'textarea',l:'วิธีทดสอบ + ข้อมูลที่วัดได้ (pH/อุณหภูมิ)',req:true},
+           {k:'concl',t:'textarea',l:'ข้อสรุป',req:true}],photo:true,photoLabel:'รูปน้ำพุ/การทดสอบ'},
+  {code:'M3',title:'ปริศนาหินไม่ลื่น',when:'เล่นน้ำตก',accent:'#2563eb',
+   brief:'หาหลักฐานว่าทำไมเดินบนบัวตองไม่ลื่น (ลูบเทียบผิวหิน + หยดน้ำส้มสายชูบนเศษหิน สังเกตฟอง)',
+   coach:'“ผิวหินต่างจากหินลื่นยังไง?” · “ฟองที่เกิดคือแก๊สอะไร?”',
+   fields:[{k:'exp',t:'textarea',l:'คำอธิบาย: ทำไมหินไม่ลื่น',req:true},
+           {k:'evi',t:'textarea',l:'หลักฐาน (การลูบ + ผลหยดกรด)',req:true}],photo:true,photoLabel:'รูปหิน/การทดสอบ'},
+  {code:'M4',title:'นักเดินเรือดวงดาว',when:'ดูดาว Dobsonian',accent:'#3b2e86',
+   brief:'ถ่ายรูปผ่านกล้องดูดาว ≥2 วัตถุ อัปขึ้นเว็บพร้อมคำบรรยาย และคำนวณ/ประมาณค่า ≥1 อย่าง',
+   coach:'“ถ่ายแล้วภาพสั่น/มืด แก้ยังไง?” · “ดาวฤกษ์กับดาวเคราะห์ต่างกันยังไง?”',
+   fields:[{k:'qs',t:'textarea',l:'คำถามถึงอาจารย์ 2 ข้อ',req:true},
+           {k:'calc',t:'textarea',l:'การคำนวณ/ประมาณค่า (เช่น ระยะเชิงมุม)',req:true}],photo:true,photoLabel:'ภาพถ่ายผ่านกล้องดูดาว (≥2 วัตถุ)'},
+  {code:'M5',title:'เวทีถอดสะเต็ม',when:'นำเสนอ',accent:'#e07b00',
+   brief:'สังเคราะห์หลักฐาน M1–M4 ตอบคำถามประจำกลุ่ม แล้วส่งผลงานนำเสนอ (สไลด์ Canva / คลิป / อินโฟกราฟิก AI)',
+   coach:'“หลักฐานชิ้นไหนหนักแน่นสุด?” · “ถ้าทำใหม่จะเปลี่ยนอะไร?”',
+   fields:[{k:'link',t:'url',l:'ลิงก์ผลงาน (Canva/คลิปวิดีโอ)',req:false},
+           {k:'sum',t:'textarea',l:'สรุปสั้น ๆ',req:true}],photo:true,photoLabel:'ภาพอินโฟกราฟิก (ถ้ามี)'}
+];
+var M={}; MISSIONS.forEach(function(m){M[m.code]=m;});
+
+/* special post-camp task (not scored for the award; earns a certificate) */
+var SPECIAL={code:'VDO',title:'คลิปวิดีโอค่าย',when:'ส่งได้ถึงหลังจบค่าย',accent:'#be185d',
+ brief:'ทำคลิปวิดีโอ “ไม่เกิน 10 นาที” เล่าการมาค่ายตั้งแต่ต้นจนจบ แล้ววางลิงก์คลิป',
+ coach:'เล่าเป็นเรื่องราว: ออกเดินทาง → ภารกิจ → เล่นน้ำ → ดูดาว → ความประทับใจ',
+ note:'งานนี้ไม่เกี่ยวกับการตัดสินรางวัล · กลุ่มที่ส่งคลิป (แม้หลังจบค่าย) จะได้รับเกียรติบัตรค่าย 🎓',
+ fields:[{k:'vlink',t:'url',l:'ลิงก์คลิปวิดีโอ (YouTube/Google Drive ฯลฯ)',req:true},
+         {k:'vnote',t:'text',l:'ความยาวคลิป / หมายเหตุ (เช่น 8:45 นาที)',req:false}],photo:false};
+M[SPECIAL.code]=SPECIAL;
+
+/* ---------- schedule (2 days) ---------- */
+var SCHEDULE={
+ day1:{label:'วันที่ 1 · ศุกร์ 21 พ.ย. 2569',rows:[
+  {t:'~06:00',a:'ออกเดินทางจากโรงเรียนลองวิทยา (รถหกล้อ) · เช็กชื่อ ชี้แจงกฎ'},
+  {t:'~10:00',a:'ถึงอุทยานฯ · ฟังประวัติอุทยาน',m:'M0'},
+  {t:'10:30–12:00',a:'กางเต็นท์ · จัดแคมป์',m:'M1'},
+  {t:'12:00–13:00',a:'รับประทานอาหารกลางวัน'},
+  {t:'13:00–15:00',a:'เดินสำรวจน้ำพุเจ็ดสี',m:'M2'},
+  {t:'15:00–16:30',a:'เล่นน้ำตก + ภารกิจแฝง',m:'M3'},
+  {t:'16:30–18:00',a:'อาบน้ำ พักผ่อน · รับประทานอาหารเย็น'},
+  {t:'18:00–19:00',a:'ฟังบรรยายดาราศาสตร์ จากอาจารย์มหาวิทยาลัย',m:'M4'},
+  {t:'19:00–20:00',a:'ดูดาวด้วยกล้อง Dobsonian',m:'M4'},
+  {t:'20:00–21:00',a:'ถอดบทเรียน STEM + นำเสนอ + มอบรางวัล',m:'M5'},
+  {t:'21:00',a:'สรุปปิดวัน · เข้านอน'}
+ ]},
+ day2:{label:'วันที่ 2 · เสาร์ 22 พ.ย. 2569',rows:[
+  {t:'06:00–07:00',a:'ตื่นนอน ทำธุระส่วนตัว และเก็บสัมภาระ',p:'ที่พัก/หอพัก'},
+  {t:'07:00–07:45',a:'รับประทานอาหารเช้า (ที่เตรียมไว้)',p:'พื้นที่รับประทานอาหาร'},
+  {t:'08:00–08:30',a:'เก็บเต็นท์ และขนสัมภาระขึ้นรถ',p:'ลานรวมกิจกรรม'},
+  {t:'08:30–10:00',a:'เดินทางไปวัดเด่นสะหลีศรีเมืองแกน เพื่อไหว้พระ ขอพร',p:'วัดเด่นสะหลีศรีเมืองแกน'},
+  {t:'10:00–11:20',a:'แดนเทวดา คาเฟ่สวนป่า — ศึกษาสถาปัตยกรรม/การจัดการสิ่งแวดล้อม',p:'แดนเทวดา คาเฟ่สวนป่า'},
+  {t:'11:20–14:00',a:'รับประทานอาหารกลางวัน (ที่เตรียมไว้)',p:'เซ็นทรัลเฟสติวัล'},
+  {t:'14:00–18:00',a:'เดินทางโดยสวัสดิภาพสู่โรงเรียนลองวิทยา',p:'โรงเรียนลองวิทยา'}
+ ]}
+};
+
+/* ---------- teacher handbook (detailed) ---------- */
+var HBX={
+ M0:{success:'คำถาม 5 ข้อ + คำถามประจำกลุ่ม 1 ข้อที่วัด/ทดสอบได้จริง',materials:'สมุด/เว็บแอป'},
+ M1:{success:'อธิบายเหตุผลเลือกจุด ≥3 ข้อ + ผ่านการทดสอบที่คิดเอง',materials:'เต็นท์+สมอบก+เชือก, เข็มทิศ/แอป, ขวดน้ำ'},
+ M2:{success:'สมมติฐานชัด + วิธีทดสอบที่คิดเอง + ข้อสรุปมีหลักฐาน',materials:'แก้ว/ขวดใส, กระดาษขาว, ไฟฉาย, กระดาษ pH, เทอร์โมมิเตอร์, แว่นขยาย, ตลับเมตร'},
+ M3:{success:'อธิบาย “ทำไมไม่ลื่น” พร้อมหลักฐานจากการสังเกต/ทดสอบเอง',materials:'เศษหินปูน + น้ำส้มสายชู + หลอดหยด + ถาดหลุม, แว่นขยาย',note:'สำหรับครู (อย่าเพิ่งเฉลย): CaCO₃ ตกตะกอนเคลือบหินเป็นผิวหยาบ = หินปูน/ทราเวอร์ทีน · ฟอง = แก๊ส CO₂',safety:'ความปลอดภัยน้ำ: จับคู่ buddy · ครูนับหัวทุก 15 นาที · นกหวีดยาว 3 ครั้ง = ขึ้นจากน้ำ · เล่นเฉพาะจุดที่อนุญาต'},
+ M4:{success:'คำถามถึงวิทยากร 2 ข้อ + ภาพ ≥2 วัตถุ + การคำนวณ ≥1',materials:'มือถือ, คลิปจับมือถือเข้าเลนส์ (ถ้ามี), แผนที่ดาว/แอป, ไฟฉายแสงแดง',note:'กรอบคิด: อาจารย์ ม. + กล้องดูดาว = “แหล่งข้อมูล” · นักเรียน = ผู้ตั้งคำถามและเก็บข้อมูลเอง'},
+ M5:{success:'นำเสนอ 3 นาที (สไลด์ Canva/คลิป/อินโฟกราฟิก AI)',materials:'เลือกเครื่องมือเอง (Canva/มือถือ/AI)'}
+};
+var HANDBOOK=[
+ {n:'1',title:'แนวคิด จุดประสงค์ และการจัดกลุ่ม',html:
+  '<div class="mini"><b>“ครูถาม ไม่บอก — นักเรียนคิดเอง ทำเอง สรุปเอง”</b><br>ทุกภารกิจใช้วงจรวิศวกรรม EDP + การสืบเสาะ: ถาม → จินตนาการ → วางแผน → สร้าง → ทดสอบ → ปรับปรุง</div>'
+  +'<h4>จุดประสงค์การเรียนรู้</h4><ul>'
+  +'<li>อธิบายการตกตะกอนของแคลเซียมคาร์บอเนต (CaCO₃) และการเกิดหินปูน/ทราเวอร์ทีน</li>'
+  +'<li>เชื่อมโยง สารบริสุทธิ์–กรดเบส–แรงเสียดทาน–แสง–การวัดเชิงมุม/ดาราศาสตร์</li>'
+  +'<li>ฝึกทักษะกระบวนการทางวิทยาศาสตร์: สังเกต วัด ตั้งสมมติฐาน สรุปผล นำเสนอ</li>'
+  +'<li>ปลูกฝังการทำงานเป็นทีมและจิตสำนึกอนุรักษ์ป่าต้นน้ำ</li></ul>'
+  +'<h4>บทบาท</h4><ul>'
+  +'<li><b>ครู (17 คน) = ที่ปรึกษาเคลื่อนที่</b> — ห้ามบอกคำตอบ ห้ามลงมือแทน เมื่อเด็กติดให้ “ถามกลับ”</li>'
+  +'<li><b>หัวหน้าทีม (นักเรียน) = ผู้นำกระบวนการกลุ่ม</b> — กระตุ้นให้เพื่อนคิด คุมทิศทางและเวลา</li></ul>'
+  +'<h4>การจัดกลุ่ม — 6 กลุ่ม (รวม 58 คน)</h4><p>4 กลุ่ม กลุ่มละ 10 คน + 2 กลุ่ม กลุ่มละ 9 คน:</p><ul>'
+  +'<li>🔴 พลาสมา 10 · 🟠 โฟตอน 10 · 🟡 ควอนตัม 10</li>'
+  +'<li>🟢 โมเลกุล 10 · 🔵 นิวตรอน 9 · 🟣 กาแล็กซี 9</li></ul>'
+  +'<p>ภายในกลุ่มแบ่งบทบาทหมุนเวียน: หัวหน้าทีม · นักบันทึก (กรอกในเว็บแอป) · นักวัด/ช่าง · นักออกแบบ · ผู้คุมเวลา–วัสดุ · นักสื่อสาร</p>'},
+ {n:'2',title:'กำหนดการค่าย (2 วัน)',sched:true},
+ {n:'3',title:'ชุดภารกิจ STEM (M0–M5)',missions:true},
+ {n:'4',title:'การนำเสนอ ประเมิน และมอบรางวัล',html:
+  '<h4>ลำดับช่วงถอดสะเต็ม (20:00–21:00)</h4><ul>'
+  +'<li><b>20:00–20:20</b> สังเคราะห์หลักฐานตอบคำถามประจำกลุ่ม (สไลด์ Canva / คลิป / อินโฟกราฟิก AI)</li>'
+  +'<li><b>20:20–20:55</b> นำเสนอกลุ่มละ 3 นาที</li>'
+  +'<li><b>20:55–21:00</b> ครูรวมคะแนนตามรูบริก → ตัดสินรางวัลที่ 1–3</li></ul>'
+  +'<div class="mini" style="border-left:4px solid #e07b00">🏆 <b>มอบรางวัล:</b> คณะครูตัดสินผลงานยอดเยี่ยมอันดับ 1–3 แล้วเรียนเชิญ <b>ท่านผู้อำนวยการ</b> มอบรางวัลแก่กลุ่มที่ชนะ</div>'
+  +'<div class="mini" style="border-left:4px solid #be185d">🎬 <b>คลิปวิดีโอค่าย (งานพิเศษ):</b> แต่ละกลุ่มทำคลิป ≤10 นาที เล่าการมาค่ายตั้งแต่ต้นจนจบ ส่งลิงก์ในเว็บแอปได้ถึงหลังจบค่าย — <b>ไม่เกี่ยวกับการตัดสินรางวัล</b> กลุ่มที่ส่งคลิปจะได้รับ <b>เกียรติบัตรค่าย</b> 🎓</div>'
+  +'<h4>รูบริกประเมิน (เน้นกระบวนการ)</h4>'
+  +'<div class="rub"><b>หลักฐาน & เหตุผล</b><div class="lv">4 สรุปจากหลักฐานชัด · 3 มีหลักฐานรองรับ · 2 หลักฐานบางส่วน · 1 เดา ไม่มีหลักฐาน</div></div>'
+  +'<div class="rub"><b>กระบวนการ EDP/สืบเสาะ</b><div class="lv">4 ออกแบบ+ปรับปรุงซ้ำชัด · 3 มีขั้นตอนครบ · 2 ขั้นตอนไม่ครบ · 1 ไม่เป็นระบบ</div></div>'
+  +'<div class="rub"><b>การทำงานเป็นทีม</b><div class="lv">4 ทุกคนมีบทบาทชัด · 3 ส่วนใหญ่ร่วมมือ · 2 บางคนร่วม · 1 ทำไม่กี่คน</div></div>'
+  +'<div class="rub"><b>สร้างสรรค์/แก้ปัญหา</b><div class="lv">4 แปลกใหม่ แก้ได้ดี · 3 มีไอเดียของตัวเอง · 2 ทำตามแบบ · 1 คัดลอก</div></div>'
+  +'<div class="rub"><b>การสื่อสาร/นำเสนอ</b><div class="lv">4 ชัด น่าสนใจ ตรงเวลา · 3 เข้าใจได้ · 2 ติดขัดบ้าง · 1 ไม่ชัด</div></div>'},
+ {n:'5',title:'วัสดุ · ปรับระดับชั้น · คลังคำถามโค้ช',html:
+  '<h4>วัสดุรวม</h4>'
+  +'<div class="mini"><b>กล่องชุดต่อกลุ่ม (×6):</b> มือถือกลุ่ม, แก้ว/ขวดใส 2, กระดาษขาว, ไฟฉาย, กระดาษวัด pH, เทอร์โมมิเตอร์, แว่นขยาย, เชือก/ตลับเมตร</div>'
+  +'<div class="mini"><b>ส่วนกลาง:</b> น้ำส้มสายชู+หลอดหยด+ถาดหลุม (M3), เข็มทิศ, คลิปจับมือถือเข้าเลนส์กล้องดูดาว, แผนที่ดาว/แอป, ไฟฉายแสงแดง, ชุดปฐมพยาบาล, นกหวีด, เราเตอร์/ฮอตสปอตสำรอง</div>'
+  +'<h4>ปรับระดับตามช่วงชั้น</h4><ul>'
+  +'<li><b>M2 เจ็ดสี</b> — ม.ต้น: สีมาจากแสง/สภาพแวดล้อม · ม.ปลาย: การกระเจิง/หักเหเชิงลึก + เชื่อม pH–หินปูน</li>'
+  +'<li><b>M3 หินไม่ลื่น</b> — ม.ต้น: รู้ว่าเป็น CO₂ · ม.ปลาย: เขียนสมการ CaCO₃ + กรด</li>'
+  +'<li><b>M4 ดาว</b> — ม.ต้น: ถ่ายภาพ + ประมาณมุมด้วยกำปั้น · ม.ปลาย: คำนวณระยะเชิงมุม/มาตราส่วนด้วยตรีโกณ</li></ul>'
+  +'<h4>คลังคำถามโค้ช (ใช้แทนการบอกคำตอบ)</h4><ul>'
+  +'<li>“ทำไมถึงคิดแบบนั้น? มีอะไรเป็นหลักฐาน?”</li>'
+  +'<li>“ถ้าลองเปลี่ยน ___ จะเกิดอะไรขึ้น?”</li>'
+  +'<li>“มีวิธีอื่นอีกไหม? วิธีไหนดีกว่า เพราะอะไร?”</li>'
+  +'<li>“ตอนนี้ติดตรงไหน? อะไรที่เรารู้แล้วบ้าง?”</li>'
+  +'<li>ขอคำตอบตรง ๆ → ถามกลับ “แล้วหนูเดาว่าไงล่ะ? ลองทดสอบดูก่อนไหม?”</li></ul>'},
+ {n:'6',title:'ความปลอดภัย · เตรียมตัว · เบอร์ติดต่อ',html:
+  '<h4>Checklist การเตรียม</h4><ul>'
+  +'<li><b>เอกสาร/สื่อ:</b> ลิงก์/QR เว็บแอป, ป้ายกลุ่มสี, ใบเช็กชื่อ, ใบยินยอมผู้ปกครอง, รูบริก</li>'
+  +'<li><b>ส่วนตัวนักเรียน:</b> มือถือ(ชาร์จเต็ม)+พาวเวอร์แบงก์, ชุดเล่นน้ำ+ชุดเปลี่ยน, รองเท้ากันลื่น, หมวก, ยากันแดด/กันยุง, กระบอกน้ำ, ไฟฉาย, ยาประจำตัว</li></ul>'
+  +'<h4>ความปลอดภัยหลัก</h4><ul>'
+  +'<li><b>เล่นน้ำ:</b> buddy, ครูนับหัวทุก 15 นาที, นกหวีดยาว 3 ครั้ง = ขึ้นจากน้ำ, เล่นเฉพาะจุดที่อนุญาต</li>'
+  +'<li><b>กลางคืน:</b> ใช้ไฟฉาย เดินเป็นกลุ่ม ไม่ออกนอกเขตแคมป์</li>'
+  +'<li><b>ทั่วไป:</b> จุดนัดพบชัดเจน, ครูประจำกลุ่มตลอด, เก็บขยะกลับทุกชิ้น</li></ul>'
+  +'<h4>เบอร์ติดต่อ</h4><ul>'
+  +'<li>อุทยานฯ (จอง/ขออนุญาตกางเต็นท์): <b>093 193 3556</b> · namtokbuatong@gmail.com</li>'
+  +'<li>การแพทย์ฉุกเฉิน <b>1669</b> · สายด่วนพิทักษ์ป่า <b>1362</b></li></ul>'
+  +'<div class="tn">ต้องยืนยันล่วงหน้า: โทรจองจุดกางเต็นท์และสอบถามกฎการพักค้างคืน/การก่อไฟก่อนวันเดินทาง</div>'}
+];
+
+/* seeded example submissions for a lively gallery (demo) */
+var seed=[
+  {id:1,group:'blue',mission:'M4',cap:'ดวงจันทร์ เห็นหลุมเพียบ ถ่ายผ่าน Dobsonian',emoji:'🌙',t:Date.now()-1000*60*7,demo:true},
+  {id:2,group:'red',mission:'M4',cap:'ดาวเสาร์ มีวงแหวนจริง ๆ ด้วย!',emoji:'🪐',t:Date.now()-1000*60*12,demo:true},
+  {id:3,group:'green',mission:'M3',cap:'หยดน้ำส้มสายชูแล้วมีฟองขึ้นเพียบ',emoji:'🪨',t:Date.now()-1000*60*26,demo:true},
+  {id:4,group:'orange',mission:'M2',cap:'ตักน้ำขึ้นแก้วแล้วสีหายไป = สีมาจากแสง!',emoji:'💧',t:Date.now()-1000*60*41,demo:true}
+];
+
+/* ---------- state ---------- */
+var state={view:'home',role:null,group:null,mission:null,offline:false,pendingShots:[],reveal:false,galG:'',galM:''};
+var subs=[]; var nextId=100; var hearts={};
+try{ var raw=localStorage.getItem('camp_demo'); if(raw){var o=JSON.parse(raw); subs=o.subs||[]; nextId=o.nextId||100; hearts=o.hearts||{}; state.reveal=!!o.reveal;} }catch(e){}
+function persist(){ try{localStorage.setItem('camp_demo',JSON.stringify({subs:subs,nextId:nextId,hearts:hearts,reveal:state.reveal}));}catch(e){} }
+
+/* ============================================================
+   CONFIG — ใส่ URL ของ Google Apps Script Web App ตรงนี้
+   (เว้นว่าง = โหมดเดโม เก็บข้อมูลในเครื่อง · ใส่ URL = เก็บจริงใน Google Sheet/Drive)
+   ============================================================ */
+var API_URL = 'https://script.google.com/macros/s/AKfycbzj4o1mX2HOkZKNRhua03WOtVfWRZucbpz9cfmZ3jBtwD-2texNQnRXA0k1rVyt6cvxCw/exec';   // เช่น 'https://script.google.com/macros/s/AKfy....../exec'
+
+var LIVE = /^https?:\/\//.test(API_URL);
+function apiGet(cb){ fetch(API_URL+'?t='+Date.now()).then(function(r){return r.json();}).then(cb).catch(function(){}); }
+function apiPost(payload,cb){
+  fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)})
+    .then(function(r){return r.json();}).then(function(d){cb&&cb(d);}).catch(function(){cb&&cb({ok:false});});
+}
+function refresh(){ if(!LIVE)return; apiGet(function(d){ if(!d)return; if(d.items)subs=d.items; if(d.hearts)hearts=d.hearts; state.reveal=!!d.reveal; render(); }); }
+
+function allPosts(){ // gallery = demo seeds + real submissions that have a photo
+  var real=subs.filter(function(s){return s.photo;}).map(function(s){
+    return {id:s.id,group:s.group,mission:s.mission,cap:s.cap||'',photo:s.photo,t:s.t};});
+  return real.concat(seed).sort(function(a,b){return b.t-a.t;});
+}
+function isCore(code){ return code!=='VDO'; }
+function hasVideo(group){ return subs.some(function(s){return s.group===group&&s.mission==='VDO';}); }
+function videoLink(group){ var v=subs.filter(function(s){return s.group===group&&s.mission==='VDO';}).pop(); return v&&v.fields?v.fields.vlink:''; }
+function doneCount(group){ var set={}; subs.forEach(function(s){ if(s.group===group&&isCore(s.mission)) set[s.mission]=1; }); return Object.keys(set).length; }
+function groupDone(group){ var set={}; subs.forEach(function(s){ if(s.group===group&&isCore(s.mission)) set[s.mission]=1; }); return set; }
+
+/* ---------- helpers ---------- */
+var el=function(id){return document.getElementById(id);};
+function esc(s){return (s||'').replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function ago(t){var m=Math.round((Date.now()-t)/60000); if(m<1)return'เมื่อกี้'; if(m<60)return m+' นาทีที่แล้ว'; return Math.round(m/60)+' ชม.ที่แล้ว';}
+function toast(msg){var t=el('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(function(){t.classList.remove('show');},2400);}
+function go(v){state.view=v;render();window.scrollTo(0,0);}
+
+/* client-side image resize → jpeg dataURL (real "ย่อรูปอัตโนมัติ") */
+function resizeImage(file,cb){
+  var fr=new FileReader();
+  fr.onload=function(){
+    var img=new Image();
+    img.onload=function(){
+      var max=1000,w=img.width,h=img.height;
+      if(w>h&&w>max){h=Math.round(h*max/w);w=max;} else if(h>max){w=Math.round(w*max/h);h=max;}
+      var c=document.createElement('canvas');c.width=w;c.height=h;
+      c.getContext('2d').drawImage(img,0,0,w,h);
+      try{cb(c.toDataURL('image/jpeg',0.8));}catch(e){cb(fr.result);}
+    };
+    img.onerror=function(){cb(fr.result);};
+    img.src=fr.result;
+  };
+  fr.readAsDataURL(file);
+}
+
+/* ---------- render ---------- */
+var draft={}; // current mission form photos
+function render(){
+  var v=state.view, h='';
+  // top-right + nav visibility
+  var tr=el('topRight');
+  if(state.role==='student'&&state.group){
+    var g=G[state.group];
+    tr.innerHTML='<span class="pill-group"><span class="dot" style="background:'+g.color+'"></span>'+g.name+'</span>';
+  } else if(state.role==='teacher'){
+    tr.innerHTML='<span class="pill-group">👩‍🏫 ครู</span>';
+  } else tr.innerHTML='';
+
+  if(v==='home') h=vHome();
+  else if(v==='group') h=vGroup();
+  else if(v==='board') h=vBoard();
+  else if(v==='mission') h=vMission();
+  else if(v==='gallery') h=vGallery();
+  else if(v==='schedule') h=vSchedule();
+  else if(v==='teacher') h=vTeacher();
+  else if(v==='handbook') h=vHandbook();
+  el('view').innerHTML=h;
+
+  // nav
+  var nav=el('nav');
+  if(state.role==='student'&&(v==='board'||v==='mission'||v==='gallery'||v==='schedule')){
+    nav.hidden=false;
+    var sa=(v==='mission')?'board':v;
+    nav.innerHTML=navBtn('board','📋','ภารกิจ',sa==='board')+navBtn('schedule','🗓️','กำหนดการ',sa==='schedule')+navBtn('gallery','🖼️','แกลเลอรี',sa==='gallery');
+  } else if(state.role==='teacher'&&(v==='teacher'||v==='handbook'||v==='gallery'||v==='schedule')){
+    nav.hidden=false;
+    nav.innerHTML=navBtn('teacher','📊','แดชบอร์ด',v==='teacher')+navBtn('handbook','📖','คู่มือครู',v==='handbook')+navBtn('gallery','🖼️','แกลเลอรี',v==='gallery');
+  } else nav.hidden=true;
+
+  bind();
+}
+function navBtn(view,ic,lb,on){return '<button class="'+(on?'on':'')+'" onclick="go(\''+view+'\')"><span class="ni">'+ic+'</span>'+lb+'</button>';}
+
+function dayBlock(d){
+  var h='<div class="day"><span class="daylabel">'+d.label+'</span>';
+  d.rows.forEach(function(r){
+    h+='<div class="srow"><span class="st">'+r.t+'</span><span class="sa">'+esc(r.a);
+    if(r.m){var m=M[r.m];h+='<br><span class="schip" style="background:'+m.accent+'">'+r.m+' · '+m.title+'</span>';}
+    if(r.p){h+='<span class="splace">📍 '+esc(r.p)+'</span>';}
+    h+='</span></div>';
+  });
+  return h+'</div>';
+}
+function vSchedule(){
+  return '<div class="eyebrow">ค่าย 2 วัน 1 คืน</div><h2 class="page">กำหนดการค่าย</h2>'
+    +'<p class="lead">21–22 พฤศจิกายน 2569 · อุทยานฯ บัวตอง–น้ำพุเจ็ดสี</p>'
+    +dayBlock(SCHEDULE.day1)+dayBlock(SCHEDULE.day2);
+}
+function renderHbMissions(){
+  var h='<p>แต่ละภารกิจบอกแค่โจทย์ + เกณฑ์สำเร็จ + วัสดุ — วิธีทำคือสิ่งที่นักเรียนคิดเอง</p>';
+  MISSIONS.forEach(function(m){var x=HBX[m.code]||{};
+    h+='<div class="mini" style="border-left:4px solid '+m.accent+'">'
+      +'<b style="color:'+m.accent+'">'+m.code+' · '+m.title+'</b> <span style="color:var(--muted);font-size:.76rem">('+m.when+')</span>'
+      +'<p style="margin:5px 0 4px">'+m.brief+'</p>'
+      +(x.success?'<div style="font-size:.8rem;margin-bottom:2px"><b>เกณฑ์สำเร็จ:</b> '+x.success+'</div>':'')
+      +(x.materials?'<div style="font-size:.8rem"><b>วัสดุ:</b> '+x.materials+'</div>':'')
+      +'<div style="font-size:.8rem;font-style:italic;color:var(--muted);margin-top:4px">โค้ช: '+m.coach+'</div>'
+      +(x.note?'<div class="tn">'+x.note+'</div>':'')
+      +(x.safety?'<div class="sf">'+x.safety+'</div>':'')+'</div>';
+  });
+  return h;
+}
+function vHandbook(){
+  var h='<button class="back" onclick="go(\'teacher\')">‹ แดชบอร์ด</button>'
+    +'<div class="eyebrow">สำหรับครู 17 คน</div><h2 class="page">คู่มือครูฉบับละเอียด</h2>'
+    +'<p class="lead">แตะหัวข้อเพื่อกาง/พับ · อ่านบนมือถือได้เลย ไม่ต้องใช้กระดาษ</p>';
+  HANDBOOK.forEach(function(s,i){
+    var body=s.sched?(dayBlock(SCHEDULE.day1)+dayBlock(SCHEDULE.day2)):(s.missions?renderHbMissions():s.html);
+    h+='<div class="acc'+(i===0?' open':'')+'" id="acc'+i+'"><button class="ah" onclick="toggleAcc('+i+')">'
+      +'<span class="anum">'+s.n+'</span>'+s.title+'<span class="arr">›</span></button>'
+      +'<div class="abody">'+body+'</div></div>';
+  });
+  return h;
+}
+function toggleAcc(i){var a=el('acc'+i);if(a)a.classList.toggle('open');}
+
+function vHome(){
+  return '<div class="hero"><div class="rainbow"></div>'
+    +'<div class="eyebrow">ค่าย Winter STEM Camp</div>'
+    +'<h2 class="page">สัมผัสธรรมชาติ สำรวจวิทยาศาสตร์</h2>'
+    +'<p class="lead">ทำภารกิจ ส่งคำตอบ อัปรูป ผ่านมือถือ — เห็นผลงานทุกกลุ่มสด ๆ ไม่ใช้กระดาษ</p>'
+    +'<div class="role-grid">'
+    +'<button class="role" onclick="pickRole(\'student\')"><div class="ic">🎒</div><div class="nm">นักเรียน</div><div class="ds">เลือกกลุ่ม แล้วทำภารกิจ</div></button>'
+    +'<button class="role" onclick="pickRole(\'teacher\')"><div class="ic">👩‍🏫</div><div class="nm">ครู</div><div class="ds">ดูงานทุกกลุ่ม + ประเมิน</div></button>'
+    +'</div></div>'
+    +'<p class="note">'+(LIVE?'🟢 เชื่อมต่อแล้ว — ข้อมูลบันทึกจริงใน Google Sheet/Drive ของโรงเรียน':'เวอร์ชันร่าง (Demo) — ข้อมูลเก็บในเครื่องนี้ชั่วคราวเพื่อดูโฟลว์')+'</p>';
+}
+
+function vGroup(){
+  var h='<button class="back" onclick="go(\'home\')">‹ กลับ</button>'
+    +'<div class="eyebrow">ขั้นที่ 1</div><h2 class="page">เลือกกลุ่มของฉัน</h2>'
+    +'<p class="lead">แตะกลุ่มสีของเธอเพื่อเริ่มทำภารกิจ</p><div class="groups">';
+  GROUPS.forEach(function(g){
+    h+='<button class="gcard" onclick="setGroup(\''+g.id+'\')"><span class="gdot" style="background:'+g.color+'"></span>'
+      +'<span><span class="gname">'+g.name+'</span><br><span class="gcount">'+g.count+' คน</span></span></button>';
+  });
+  return h+'</div>';
+}
+
+function vBoard(){
+  var done=groupDone(state.group), n=Object.keys(done).length, pct=Math.round(n/MISSIONS.length*100);
+  var h='';
+  if(state.offline||state.pendingShots.length) h+=offbar();
+  h+='<div class="eyebrow">กลุ่ม '+esc(G[state.group].name)+' · <a href="#" onclick="changeGroup();return false;" style="color:var(--brand);text-decoration:underline">เปลี่ยนกลุ่ม</a></div><h2 class="page">กระดานภารกิจ STEM</h2>'
+    +'<div class="progress"><div class="ring" style="--p:'+pct+'"><span>'+n+'/'+MISSIONS.length+'</span></div>'
+    +'<div><div class="ui" style="font-weight:600">ความคืบหน้า '+pct+'%</div>'
+    +'<div style="font-size:.8rem;color:var(--muted)">ทำครบทุกภารกิจเพื่อปลดล็อกการนำเสนอ M5</div></div></div>';
+  MISSIONS.forEach(function(m){
+    var isDone=done[m.code];
+    h+='<button class="mcard" style="--accent:'+m.accent+'" onclick="openMission(\''+m.code+'\')">'
+      +'<span class="mcode">'+m.code+'</span>'
+      +'<span><span class="mttl">'+m.title+'</span><br><span class="mwhen">'+m.when+'</span></span>'
+      +'<span class="mstat '+(isDone?'st-done':'st-todo')+'">'+(isDone?'✓ ส่งแล้ว':'ยังไม่ส่ง')+'</span></button>';
+  });
+  // special post-camp task
+  var vdone=hasVideo(state.group);
+  h+='<div style="margin:18px 0 9px;font-family:var(--font-head);font-weight:600;color:var(--muted);font-size:.84rem">🎬 งานพิเศษ — ได้เกียรติบัตร (ไม่เกี่ยวกับรางวัล)</div>'
+    +'<button class="mcard" style="--accent:'+SPECIAL.accent+';background:linear-gradient(135deg,color-mix(in srgb,'+SPECIAL.accent+' 8%,var(--card)),var(--card))" onclick="openMission(\'VDO\')">'
+    +'<span class="mcode">🎬</span>'
+    +'<span><span class="mttl">'+SPECIAL.title+'</span><br><span class="mwhen">'+SPECIAL.when+' · 🎓 เกียรติบัตร</span></span>'
+    +'<span class="mstat '+(vdone?'st-done':'st-todo')+'">'+(vdone?'✓ ส่งแล้ว':'ยังไม่ส่ง')+'</span></button>';
+  return h;
+}
+
+function vMission(){
+  var m=M[state.mission]; draft={photos:[]};
+  var h='<button class="back" onclick="go(\'board\')">‹ กระดานภารกิจ</button>';
+  if(state.offline||state.pendingShots.length) h+=offbar();
+  h+='<div class="banner" style="--accent:'+m.accent+'"><div class="bc">ภารกิจ '+m.code+' · '+m.when+'</div><h3>'+m.title+'</h3><p>'+m.brief+'</p></div>'
+    +'<div class="coachbox"><b>โค้ชชวนคิด:</b> '+m.coach+'</div>'
+    +(m.note?'<div style="border-left:4px solid '+m.accent+';background:var(--surface-2);border-radius:0 10px 10px 0;padding:10px 12px;font-size:.84rem;margin-bottom:14px">'+m.note+'</div>':'')
+    +'<form id="mform" onsubmit="return submitMission(event)">';
+  m.fields.forEach(function(f){
+    var req=f.req?' <span class="req">*</span>':'';
+    if(f.t==='textarea') h+='<label class="fl">'+f.l+req+'</label><textarea data-k="'+f.k+'" '+(f.req?'required':'')+'></textarea>';
+    else h+='<label class="fl">'+f.l+req+'</label><input type="'+(f.t==='url'?'url':'text')+'" data-k="'+f.k+'" '+(f.req?'required':'')+'>';
+  });
+  if(m.photo){
+    h+='<label class="fl">'+m.photoLabel+(m.code==='M4'?' <span class="req">*</span>':'')+'</label>'
+      +'<div class="uploader"><div>📷 ถ่ายรูป หรือเลือกจากเครื่อง</div>'
+      +'<label class="pick">เลือกรูป<input type="file" accept="image/*" capture="environment" onchange="addPhoto(event)" multiple></label>'
+      +'<div class="resize-note">รูปจะถูกย่อขนาดอัตโนมัติก่อนส่ง (ประหยัดเน็ต)</div>'
+      +'<div class="thumbs" id="thumbs"></div></div>';
+  }
+  h+='<button type="submit" class="submit">ส่งคำตอบขึ้นเว็บ</button></form>';
+  return h;
+}
+
+function galItems(){
+  var showText=(state.reveal||state.role==='teacher');
+  var items=[];
+  subs.forEach(function(s){
+    if(s.mission==='VDO') items.push({kind:'video',s:s});
+    else if(s.photo) items.push({kind:'photo',s:s});
+    else if(showText) items.push({kind:'text',s:s});
+  });
+  if(!LIVE) seed.forEach(function(x){ items.push({kind:'seed',s:x}); });
+  items=items.filter(function(it){
+    if(state.galG&&it.s.group!==state.galG) return false;
+    if(state.galM&&it.s.mission!==state.galM) return false;
+    return true;
+  });
+  items.sort(function(a,b){return b.s.t-a.s.t;});
+  return items;
+}
+function fieldLines(s){
+  var m=M[s.mission]; if(!m||!m.fields||!s.fields) return '';
+  var h='<div class="ans">';
+  m.fields.forEach(function(f){ var v=s.fields[f.k]; if(v) h+='<div class="aln"><b>'+esc(f.l)+':</b> '+esc(v)+'</div>'; });
+  return h+'</div>';
+}
+function heartBtn(s){ var c=hearts[s.id]||0; return '<button class="heart" onclick="addHeart('+JSON.stringify(s.id)+')">❤️ '+c+'</button>'; }
+function addHeart(id){ hearts[id]=(hearts[id]||0)+1; render(); if(LIVE){ apiPost({action:'heart',id:id}); } else { persist(); } }
+function galCard(it){
+  var s=it.s, g=G[s.group]||{color:'#888',name:s.group}, m=M[s.mission]||{accent:'#888'};
+  var showText=(state.reveal||state.role==='teacher');
+  var media;
+  if(it.kind==='video') media='<div class="ph" style="background:linear-gradient(135deg,#be185d,#4a0f2e);font-size:30px">🎬</div>';
+  else if(s.photo) media='<div class="ph"><img src="'+s.photo+'" alt=""></div>';
+  else if(s.emoji) media='<div class="ph">'+s.emoji+'</div>';
+  else media='<div class="ph" style="background:linear-gradient(135deg,'+m.accent+',#1a1a2e);font-size:28px">📝</div>';
+  var b='<div class="pb"><div class="pmeta"><span class="gchip" style="background:'+g.color+'">'+esc(g.name)+'</span><span class="mtag">'+s.mission+'</span></div>'
+    +'<div class="pcap">'+esc(s.cap||'')+'</div>';
+  if(it.kind==='video'&&s.fields&&s.fields.vlink) b+='<a class="vlink" href="'+esc(s.fields.vlink)+'" target="_blank">▶ ดูคลิป</a>';
+  if(showText&&(it.kind==='text'||it.kind==='photo')) b+=fieldLines(s);
+  b+='<div class="prow"><span class="ptime">'+ago(s.t)+'</span>'+heartBtn(s)+'</div></div>';
+  return '<div class="post">'+media+b+'</div>';
+}
+function fchipRow(items,cur,fn){
+  return '<div class="fchips">'+items.map(function(it){
+    return '<button class="fchip'+(cur===it.v?' on':'')+'" onclick="'+fn+'(\''+it.v+'\')">'+it.l+'</button>';
+  }).join('')+'</div>';
+}
+function setGalG(v){ state.galG=v; render(); }
+function setGalM(v){ state.galM=v; render(); }
+function vGallery(){
+  var items=galItems();
+  var h='<div class="eyebrow">ผลงานทุกกลุ่ม</div><h2 class="page">แกลเลอรีสด</h2>'
+    +'<div class="live"><span class="blip"></span> อัปเดตอัตโนมัติ · '+items.length+' ผลงาน</div>';
+  if(state.reveal&&state.role==='student') h+='<div class="revealbanner">🔓 ครูเปิดเผยคำตอบแล้ว — ดูวิธีคิดของทุกกลุ่มได้เลย</div>';
+  // filters
+  var gItems=[{v:'',l:'ทุกกลุ่ม'}].concat(GROUPS.map(function(g){return {v:g.id,l:g.name};}));
+  var mItems=[{v:'',l:'ทุกภารกิจ'}].concat(MISSIONS.map(function(m){return {v:m.code,l:m.code};})).concat([{v:'VDO',l:'🎬 คลิป'}]);
+  h+='<div class="filterbar">'+fchipRow(gItems,state.galG,'setGalG')+fchipRow(mItems,state.galM,'setGalM')+'</div>';
+  h+='<div class="feed">';
+  if(!items.length) h+='<div class="empty">ยังไม่มีผลงานในหมวดนี้ — ไปทำภารกิจแล้วอัปกันเลย!</div>';
+  items.forEach(function(it){ h+=galCard(it); });
+  return h+'</div>';
+}
+
+function vTeacher(){
+  var tot=subs.length;
+  var h='<button class="back" onclick="go(\'home\')">‹ ออก</button>'
+    +'<div class="eyebrow">สำหรับครู (17 คน)</div><h2 class="page">แดชบอร์ดค่าย</h2>';
+  // stats
+  var photos=allPosts().length;
+  h+='<div class="statrow">'
+    +'<div class="stat"><div class="big">'+tot+'</div><div class="lb">งานที่ส่ง</div></div>'
+    +'<div class="stat"><div class="big">'+photos+'</div><div class="lb">รูปในแกลเลอรี</div></div>'
+    +'<div class="stat"><div class="big">6</div><div class="lb">กลุ่ม</div></div></div>';
+  // reveal toggle
+  h+='<button class="tog'+(state.reveal?' on':'')+'" onclick="toggleReveal()">'
+    +(state.reveal?'🔓 เปิดเผยคำตอบให้นักเรียนแล้ว — ทุกกลุ่มเห็นวิธีคิดของกันได้ (แตะเพื่อปิด)'
+      :'🔒 คำตอบข้อความเห็นเฉพาะครู · แตะเพื่อ “เปิดเผยคำตอบทั้งหมด” ให้นักเรียน (แนะนำหลังนำเสนอ M5)')+'</button>';
+  // per-group progress
+  h+='<h3 style="font-size:1.02rem;margin:4px 0 9px">ความคืบหน้าแต่ละกลุ่ม</h3>';
+  GROUPS.forEach(function(g){
+    var n=doneCount(g.id),pct=Math.round(n/MISSIONS.length*100);
+    h+='<div class="gprog"><span class="lab" style="color:'+g.color+'">'+g.name+'</span>'
+      +'<span class="bar"><i style="width:'+pct+'%;background:'+g.color+'"></i></span>'
+      +'<span class="cnt">'+n+'/'+MISSIONS.length+'</span></div>';
+  });
+  // feed
+  h+='<h3 style="font-size:1.02rem;margin:18px 0 9px">ผลงานล่าสุด</h3><div class="feed">';
+  var posts=allPosts().slice(0,6);
+  if(!posts.length) h+='<div class="empty">ยังไม่มีผลงานส่งเข้ามา</div>';
+  posts.forEach(function(p){var g=G[p.group]||{color:'#888',name:p.group};
+    h+='<div class="post"><div class="ph">'+(p.photo?'<img src="'+p.photo+'">':(p.emoji||'🖼️'))+'</div>'
+      +'<div class="pb"><div class="pmeta"><span class="gchip" style="background:'+g.color+'">'+esc(g.name)+'</span><span class="mtag">'+p.mission+'</span></div>'
+      +'<div class="pcap">'+esc(p.cap||'')+'</div></div></div>';});
+  h+='</div>';
+  // certificate tracker (video clip)
+  h+='<h3 style="font-size:1.02rem;margin:20px 0 9px">🎓 เกียรติบัตร — ส่งคลิปวิดีโอค่าย</h3>'
+    +'<div style="font-size:.8rem;color:var(--muted);margin-bottom:9px">คลิป ≤10 นาที เล่าค่ายตั้งแต่ต้นจนจบ · ส่งได้ถึงหลังจบค่าย · ไม่เกี่ยวกับการตัดสินรางวัล</div>';
+  GROUPS.forEach(function(g){ var ok=hasVideo(g.id), lk=videoLink(g.id);
+    h+='<div class="gprog"><span class="lab" style="color:'+g.color+'">'+g.name+'</span>'
+      +(ok?'<span style="flex:1;font-size:.8rem;color:var(--good)">✓ ได้เกียรติบัตร'+(lk?' · <a href="'+esc(lk)+'" target="_blank" style="color:var(--brand)">ดูคลิป</a>':'')+'</span>'
+          :'<span style="flex:1;font-size:.8rem;color:var(--muted)">ยังไม่ส่งคลิป</span>')+'</div>';
+  });
+  // award
+  h+='<h3 style="font-size:1.02rem;margin:20px 0 9px">ตัดสินรางวัล + มอบโดย ผอ.</h3>'
+    +'<div style="background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px">';
+  ['1','2','3'].forEach(function(r){
+    h+='<div class="selrow"><span style="min-width:54px">อันดับ '+r+'</span>'
+      +'<select id="rank'+r+'"><option value="">— เลือกกลุ่ม —</option>'
+      +GROUPS.map(function(g){return '<option value="'+g.id+'">'+g.name+'</option>';}).join('')+'</select></div>';
+  });
+  h+='<button class="award-btn" onclick="showPodium()">🏆 ประกาศผล + เชิญ ผอ. มอบรางวัล</button>'
+    +'<div id="podium"></div></div>';
+  return h;
+}
+
+function offbar(){
+  return '<div class="offbar">📴 <b>โหมดออฟไลน์</b> — งานจะถูกเก็บคิวไว้ ('+state.pendingShots.length+' ค้าง) ส่งเมื่อมีสัญญาณ'
+    +'<button onclick="flushQueue()">ส่งคิวที่ค้าง</button></div>';
+}
+
+/* ---------- actions ---------- */
+function pickRole(r){ state.role=r; if(r==='student'){ state.group?go('board'):go('group'); } else go('teacher'); }
+function toggleReveal(){ state.reveal=!state.reveal; render(); toast(state.reveal?'🔓 เปิดเผยคำตอบให้นักเรียนแล้ว':'🔒 ซ่อนคำตอบไว้ให้ครูเท่านั้น'); if(LIVE){ apiPost({action:'reveal',reveal:state.reveal}); } else { persist(); } }
+function setGroup(id){ state.group=id; go('board'); }
+function changeGroup(){ go('group'); }
+function openMission(code){ state.mission=code; go('mission'); }
+
+function addPhoto(e){
+  var files=e.target.files; if(!files)return;
+  Array.prototype.forEach.call(files,function(f){
+    resizeImage(f,function(url){ draft.photos.push(url); drawThumbs(); });
+  });
+  e.target.value='';
+}
+function drawThumbs(){
+  var t=el('thumbs'); if(!t)return;
+  t.innerHTML=draft.photos.map(function(u,i){return '<div class="thumb"><img src="'+u+'"><button type="button" onclick="rmPhoto('+i+')">×</button></div>';}).join('');
+}
+function rmPhoto(i){ draft.photos.splice(i,1); drawThumbs(); }
+
+function submitMission(ev){
+  ev.preventDefault();
+  var m=M[state.mission], f={}, cap='';
+  document.querySelectorAll('#mform [data-k]').forEach(function(inp){ f[inp.getAttribute('data-k')]=inp.value.trim(); });
+  if(m.code==='M4'&&!draft.photos.length){ toast('M4 ต้องอัปรูปอย่างน้อย 1 รูป'); return false; }
+  // caption for gallery
+  cap=f.qmain||f.concl||f.exp||f.sum||f.hyp||Object.values(f)[0]||'';
+  var photos=draft.photos.slice();
+  function save(photo){
+    subs.push({id:nextId++,group:state.group,mission:m.code,fields:f,cap:cap,photo:photo||null,t:Date.now()});
+    persist();
+  }
+  var payload={action:'submit',group:state.group,mission:m.code,fields:f,cap:cap,photos:photos};
+  if(!LIVE && state.offline){
+    state.pendingShots.push(payload);
+    toast('📴 เก็บคิวไว้แล้ว — จะส่งเมื่อออนไลน์');
+    go('board'); return false;
+  }
+  if(LIVE){
+    apiPost(payload,function(d){
+      if(d&&d.ok){ toast('✅ ส่งขึ้นเว็บแล้ว!'); refresh(); }
+      else { state.pendingShots.push(payload); persist(); render(); toast('📴 ส่งไม่สำเร็จ — เก็บคิวไว้ กดส่งซ้ำได้'); }
+    });
+    toast('⏳ กำลังส่ง...');
+    go('board'); return false;
+  }
+  if(photos.length){ photos.forEach(function(p){save(p);}); } else { save(null); }
+  toast('✅ ส่งขึ้นเว็บแล้ว! ดูในแกลเลอรีได้เลย');
+  go('board'); return false;
+}
+
+function flushQueue(){
+  if(!state.pendingShots.length){ toast('ไม่มีคิวค้าง'); return; }
+  if(LIVE){
+    var q=state.pendingShots.slice(); state.pendingShots=[]; persist(); var done=0;
+    toast('⏳ กำลังส่งคิว '+q.length+' งาน...');
+    q.forEach(function(p){ apiPost(p,function(d){ done++; if(!(d&&d.ok)) state.pendingShots.push(p); if(done===q.length){ persist(); refresh(); toast(state.pendingShots.length?'ยังมีงานค้าง '+state.pendingShots.length:'📤 ส่งคิวครบแล้ว'); } }); });
+    return;
+  }
+  state.pendingShots.forEach(function(q){
+    if(q.photos&&q.photos.length) q.photos.forEach(function(p){subs.push({id:nextId++,group:q.group,mission:q.mission,fields:q.fields,cap:q.cap,photo:p,t:Date.now()});});
+    else subs.push({id:nextId++,group:q.group,mission:q.mission,fields:q.fields,cap:q.cap,photo:null,t:Date.now()});
+  });
+  var n=state.pendingShots.length; state.pendingShots=[]; persist();
+  toast('📤 ส่งคิว '+n+' งานเรียบร้อย'); render();
+}
+
+function showPodium(){
+  var r1=el('rank1').value,r2=el('rank2').value,r3=el('rank3').value;
+  if(!r1&&!r2&&!r3){ toast('เลือกกลุ่มที่ได้รางวัลก่อน'); return; }
+  function pod(id,rank,h,color){ if(!id)return ''; var g=G[id];
+    return '<div class="pod" style="height:'+h+'px;background:linear-gradient(135deg,'+color+',color-mix(in srgb,'+color+' 60%,#000))"><div class="rk">'+rank+'</div><div class="nm">'+g.name+'</div></div>';}
+  el('podium').innerHTML='<div class="podium">'
+    +pod(r2,'🥈',86,'#9aa3b5')+pod(r1,'🥇',112,'#f0b429')+pod(r3,'🥉',66,'#c77b3b')+'</div>'
+    +'<p style="text-align:center;color:var(--muted);font-size:.85rem">เรียนเชิญท่านผู้อำนวยการมอบรางวัลแก่กลุ่มที่ชนะ 🎉</p>';
+  toast('🏆 ประกาศผลแล้ว');
+}
+
+/* toggle offline (demo) via long-press-free button in top bar when student */
+function toggleOffline(){ state.offline=!state.offline; toast(state.offline?'จำลองสัญญาณหลุด 📴':'ออนไลน์แล้ว 📶'); render(); }
+
+function bind(){
+  // add offline toggle button in top-right for student/teacher
+  var tr=el('topRight');
+  if(state.role && !LIVE){
+    var b=document.createElement('button'); b.className='ghost'; b.textContent=state.offline?'📴':'📶';
+    b.title='สลับโหมดออนไลน์/ออฟไลน์ (เดโม)'; b.onclick=toggleOffline;
+    tr.appendChild(b);
+  }
+}
+
+if(LIVE){ render(); refresh(); setInterval(function(){ if(['gallery','teacher','board'].indexOf(state.view)>=0) refresh(); },6000); }
+else { render(); }
+</script>
